@@ -27,8 +27,8 @@ A Streamlit application that helps analyze and cluster support tickets to identi
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/smartcluster-app.git
-cd smartcluster-app
+git clone https://github.com/yourusername/clusterapp.git
+cd clusterapp
 ```
 
 2. Install the required packages:
