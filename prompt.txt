@@ -1,0 +1,31 @@
+Vectorization Method: Sentence Embeddings
+
+Use sentence-transformers like all-MiniLM-L6-v2 to convert each support ticket into a dense, semantic vector.
+
+    Why: Unlike TF-IDF or Bag-of-Words, these embeddings understand context, not just keywords.
+
+    How:
+
+    from sentence_transformers import SentenceTransformer
+    model = SentenceTransformer('all-MiniLM-L6-v2')
+    embeddings = model.encode(list_of_texts)
+
+🔍 Clustering Algorithm: BERTopic (Built on HDBSCAN + Embeddings)
+
+    Why it's the best:
+
+        Combines sentence embeddings with HDBSCAN, a density-based clustering method.
+
+        Automatically discovers the number of topics.
+
+        Extracts interpretable keywords for each cluster.
+
+    Bonus: Visualizations like bar charts and topic hierarchies.
+
+    How it works:
+
+        Generate sentence embeddings for each ticket.
+
+        Use HDBSCAN to cluster them.
+
+        Use class-based TF-IDF to extract top words for each cluster.
