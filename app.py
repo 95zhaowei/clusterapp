@@ -1,10 +1,10 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
-from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering
-from sklearn.metrics import silhouette_score, calinski_harabasz_score
-from sklearn.preprocessing import normalize
+from sentence_transformers import SentenceTransformer
+from bertopic import BERTopic
+from umap import UMAP
+from hdbscan import HDBSCAN
 import nltk
 import re
 from nltk.corpus import stopwords
@@ -32,12 +32,10 @@ if 'monthly_data' not in st.session_state:
     st.session_state.monthly_data = {}
 if 'custom_labels' not in st.session_state:
     st.session_state.custom_labels = {}
-if 'vectorizer' not in st.session_state:
-    st.session_state.vectorizer = None
-if 'cluster_model' not in st.session_state:
-    st.session_state.cluster_model = None
-if 'search_term' not in st.session_state:
-    st.session_state.search_term = ""
+if 'topic_model' not in st.session_state:
+    st.session_state.topic_model = None
+if 'topic_summaries' not in st.session_state:
+    st.session_state.topic_summaries = {}
 
 def clean_text(text):
     """Clean and preprocess text data."""
@@ -47,18 +45,13 @@ def clean_text(text):
     # Convert to lowercase
     text = text.lower()
     
-    # Remove special characters and numbers
-    text = re.sub(r'[^a-zA-Z\s]', '', text)
+    # Remove special characters but keep important punctuation
+    text = re.sub(r'[^a-zA-Z\s.,!?]', '', text)
     
-    # Tokenize
-    tokens = word_tokenize(text)
+    # Remove extra whitespace
+    text = ' '.join(text.split())
     
-    # Remove stopwords
-    stop_words = set(stopwords.words('english'))
-    tokens = [token for token in tokens if token not in stop_words]
-    
-    # Join tokens back into string
-    return ' '.join(tokens)
+    return text
 
 @st.cache_data
 def process_uploaded_file(uploaded_file):
@@ -77,361 +70,268 @@ def process_uploaded_file(uploaded_file):
         return df
     return None
 
-def get_vectorizer(vectorizer_type, **kwargs):
-    """Get the specified vectorizer with given parameters."""
-    # Set more lenient defaults for small datasets
-    default_params = {
-        'min_df': 1,  # Accept terms that appear in at least 1 document
-        'max_df': 1.0,  # Accept all terms, even if they appear in all documents
-        'max_features': None,  # Don't limit the number of features
-        'strip_accents': 'unicode',
-        'lowercase': True,
-        'stop_words': 'english'
-    }
+def create_topic_model(min_topic_size=5):
+    """Create a BERTopic model with custom parameters."""
+    # Initialize UMAP for dimensionality reduction
+    umap_model = UMAP(
+        n_neighbors=15,
+        n_components=5,
+        min_dist=0.0,
+        metric='cosine',
+        random_state=42
+    )
     
-    # Update defaults with any provided parameters
-    params = {**default_params, **kwargs}
+    # Initialize HDBSCAN for clustering
+    hdbscan_model = HDBSCAN(
+        min_cluster_size=min_topic_size,
+        metric='euclidean',
+        cluster_selection_method='eom',
+        prediction_data=True
+    )
     
-    if vectorizer_type == "TF-IDF":
-        return TfidfVectorizer(**params)
-    elif vectorizer_type == "Count":
-        return CountVectorizer(**params)
-    return TfidfVectorizer(**params)
+    # Create BERTopic model
+    topic_model = BERTopic(
+        embedding_model='all-MiniLM-L6-v2',
+        umap_model=umap_model,
+        hdbscan_model=hdbscan_model,
+        calculate_probabilities=True,
+        verbose=True
+    )
+    
+    return topic_model
 
-def get_clustering_algorithm(algorithm, n_clusters=5, **kwargs):
-    """Get the specified clustering algorithm with parameters."""
-    # Remove any irrelevant parameters for each algorithm
-    if algorithm == "K-Means":
-        # Only use n_clusters and random_state for K-Means
-        kmeans_params = {
-            'n_clusters': n_clusters,
-            'random_state': 42
-        }
-        return KMeans(**kmeans_params)
-    elif algorithm == "DBSCAN":
-        # Only use eps and min_samples for DBSCAN
-        dbscan_params = {
-            'eps': kwargs.get('eps', 0.5),
-            'min_samples': kwargs.get('min_samples', 5)
-        }
-        return DBSCAN(**dbscan_params)
-    elif algorithm == "Hierarchical":
-        # Only use n_clusters for Hierarchical
-        hierarchical_params = {
-            'n_clusters': n_clusters
-        }
-        return AgglomerativeClustering(**hierarchical_params)
+def generate_natural_language_summary(topic_terms):
+    """Generate a natural language summary from topic terms."""
+    if not topic_terms or len(topic_terms) == 0:
+        return "No clear pattern identified in this topic."
     
-    # Default to K-Means if unknown algorithm
-    return KMeans(n_clusters=n_clusters, random_state=42)
-
-def extract_ngrams(text, n=2):
-    """Extract n-grams from text."""
-    words = text.split()
-    return [' '.join(words[i:i+n]) for i in range(len(words)-n+1)]
-
-def get_representative_phrases(texts, n_phrases=3):
-    """Get most common meaningful phrases from texts."""
-    # Extract both unigrams and bigrams
-    unigrams = list(chain.from_iterable(text.split() for text in texts))
-    bigrams = list(chain.from_iterable(extract_ngrams(text) for text in texts))
+    # Extract terms and their scores
+    terms_with_scores = [(term, score) for term, score in topic_terms[:10]]
     
-    # Count frequencies
-    unigram_freq = Counter(unigrams)
-    bigram_freq = Counter(bigrams)
+    # Group terms by importance
+    high_importance = terms_with_scores[:3]  # Top 3 terms
+    medium_importance = terms_with_scores[3:6]  # Next 3 terms
+    additional_terms = terms_with_scores[6:]  # Remaining terms
     
-    # Filter out common stopwords and short terms
-    stop_words = set(stopwords.words('english'))
-    meaningful_unigrams = {word: freq for word, freq in unigram_freq.items() 
-                         if word not in stop_words and len(word) > 2}
-    meaningful_bigrams = {phrase: freq for phrase, freq in bigram_freq.items()
-                         if not any(word in stop_words for word in phrase.split())}
+    # Create the summary
+    summary_parts = []
     
-    # Combine and sort phrases by frequency
-    all_phrases = {**meaningful_unigrams, **meaningful_bigrams}
-    return sorted(all_phrases.items(), key=lambda x: x[1], reverse=True)[:n_phrases]
-
-def summarize_cluster_content(texts, subjects):
-    """Generate a human-readable summary of cluster content."""
-    # Get the most common words from cleaned texts
-    words = ' '.join(texts).split()
-    word_freq = Counter(words)
-    common_words = [word for word, count in word_freq.most_common(5) if len(word) > 3]
+    # Start with the main theme using top terms
+    main_terms = [term for term, _ in high_importance]
+    if main_terms:
+        if len(main_terms) == 1:
+            summary_parts.append(f"This topic primarily focuses on issues related to **{main_terms[0]}**")
+        else:
+            terms_str = ", ".join(f"**{term}**" for term in main_terms[:-1]) + f" and **{main_terms[-1]}**"
+            summary_parts.append(f"This topic encompasses issues involving {terms_str}")
     
-    # Analyze subjects for common patterns
-    subject_words = ' '.join(subjects).lower().split()
-    subject_freq = Counter(subject_words)
-    common_subject_terms = [word for word, count in subject_freq.most_common(5) if len(word) > 3]
+    # Add medium importance terms
+    if medium_importance:
+        med_terms = [f"**{term}**" for term, _ in medium_importance]
+        summary_parts.append(f"Common related aspects include {', '.join(med_terms)}")
     
-    # Identify the main theme
-    main_theme = common_subject_terms[0] if common_subject_terms else common_words[0] if common_words else "General"
-    main_theme = main_theme.title()
+    # Add additional context from remaining terms
+    if additional_terms:
+        add_terms = [f"**{term}**" for term, _ in additional_terms]
+        summary_parts.append(f"Other relevant factors involve {', '.join(add_terms)}")
     
-    # Identify action/issue type
-    action_words = {'error', 'request', 'bug', 'issue', 'problem', 'update', 'question', 'help', 'support'}
-    action_type = next((word for word in subject_words if word in action_words), None)
+    # Add importance scores for key terms
+    summary_parts.append("\n\n**Key term importance:**")
+    for term, score in high_importance:
+        summary_parts.append(f"• **{term}**: {score:.3f}")
     
-    # Generate summary
-    if action_type:
-        summary = f"{main_theme} {action_type.title()}s"
-    else:
-        summary = f"{main_theme} Related Issues"
-    
-    # Add descriptive terms
-    if len(common_words) > 1:
-        descriptive_terms = [word.title() for word in common_words[1:3] if word != main_theme.lower()]
-        if descriptive_terms:
-            summary += f" ({' / '.join(descriptive_terms)})"
-    
-    return summary
-
-def generate_cluster_label(cluster_texts, subjects, vectorizer=None, cluster_center=None):
-    """Generate a descriptive label for a cluster using content analysis."""
-    if not cluster_texts:
-        return "Empty Cluster"
-    
-    try:
-        # Generate human-readable summary
-        summary = summarize_cluster_content(cluster_texts, subjects)
-        
-        # Get TF-IDF keywords if available for additional context
-        keywords = []
-        if vectorizer and cluster_center is not None and hasattr(vectorizer, 'get_feature_names_out'):
-            try:
-                feature_names = vectorizer.get_feature_names_out()
-                top_indices = cluster_center.argsort()[-3:][::-1]
-                keywords = [feature_names[i].title() for i in top_indices]
-            except:
-                pass
-        
-        # Combine summary with keywords if they add value
-        if keywords and not any(keyword.lower() in summary.lower() for keyword in keywords):
-            additional_context = ' / '.join(keywords)
-            return f"{summary} - Keywords: {additional_context}"
-        
-        return summary
-    except:
-        return "Miscellaneous Issues"
+    # Join all parts
+    return "\n\n".join(summary_parts)
 
 def perform_clustering(df, clustering_params):
-    """Perform text vectorization and clustering with given parameters."""
-    # Extract parameters
-    vectorizer_type = clustering_params["vectorizer_type"]
-    algorithm = clustering_params["algorithm"]
-    n_clusters = clustering_params.get("n_clusters", 5)
-    min_df = clustering_params.get("min_df", 1)
-    max_df = clustering_params.get("max_df", 1.0)
-    
+    """Perform text clustering using BERTopic."""
     try:
-        # Get vectorizer and vectorize text
-        vectorizer = get_vectorizer(
-            vectorizer_type,
-            min_df=min_df,
-            max_df=max_df
-        )
-        vectors = vectorizer.fit_transform(df['Cleaned Text'])
+        # Get parameters
+        min_topic_size = clustering_params.get("min_topic_size", 5)
         
-        # Check if we have any features
-        if vectors.shape[1] == 0:
-            st.error("No features were extracted from the text. Try adjusting the min_df and max_df parameters.")
-            return None, None, None
+        # Combine subject and full text for better context
+        texts = df['Subject'] + " " + df['Cleaned Text']
         
-        # Ensure we don't try to create more clusters than samples
-        n_samples = vectors.shape[0]
-        if algorithm in ["K-Means", "Hierarchical"]:
-            n_clusters = min(n_clusters, n_samples - 1)
-            if n_clusters < 2:
-                st.error("Not enough unique samples for clustering. Try adding more varied text data.")
-                return None, None, None
+        # Create and fit topic model
+        topic_model = create_topic_model(min_topic_size=min_topic_size)
+        topics, probs = topic_model.fit_transform(texts)
         
-        # Get clustering algorithm with appropriate parameters
-        if algorithm == "DBSCAN":
-            cluster_model = get_clustering_algorithm(
-                algorithm,
-                eps=clustering_params.get("eps", 0.5),
-                min_samples=clustering_params.get("min_samples", 5)
-            )
-        else:
-            cluster_model = get_clustering_algorithm(
-                algorithm,
-                n_clusters=n_clusters
-            )
+        if topics is None or len(topics) == 0:
+            st.error("No topics were generated. Please try adjusting the minimum topic size.")
+            return None, None, "No topics were generated"
         
-        # Perform clustering
-        cluster_labels = cluster_model.fit_predict(vectors)
+        # Store model in session state
+        st.session_state.topic_model = topic_model
         
-        # Calculate quality metrics
-        silhouette, calinski = evaluate_clustering(vectors, cluster_labels)
-        
-        # Generate automatic labels for clusters
-        cluster_labels_dict = {}
-        for cluster_id in range(len(np.unique(cluster_labels))):
-            cluster_texts = df[cluster_labels == cluster_id]['Cleaned Text'].tolist()
-            cluster_subjects = df[cluster_labels == cluster_id]['Subject'].tolist()
-            
-            # Get cluster center if available
-            cluster_center = None
-            if hasattr(cluster_model, 'cluster_centers_'):
-                cluster_center = cluster_model.cluster_centers_[cluster_id]
-            
-            # Generate label
-            label = generate_cluster_label(cluster_texts, cluster_subjects, vectorizer, cluster_center)
-            cluster_labels_dict[cluster_id] = label
-        
-        # Store models and labels in session state
-        st.session_state.vectorizer = vectorizer
-        st.session_state.cluster_model = cluster_model
-        st.session_state.custom_labels = cluster_labels_dict
-        
-        return cluster_labels, silhouette, calinski
+        return topics, probs, None
     
     except Exception as e:
         st.error(f"Error during clustering: {str(e)}")
-        return None, None, None
-
-def evaluate_clustering(vectors, labels):
-    """Calculate clustering quality metrics."""
-    if len(np.unique(labels)) < 2:
-        return None, None
-    
-    try:
-        silhouette = silhouette_score(vectors, labels)
-        calinski = calinski_harabasz_score(vectors, labels)
-        return silhouette, calinski
-    except:
-        return None, None
-
-def filter_dataframe(df, search_term):
-    """Filter dataframe based on search term."""
-    if not search_term:
-        return df
-    
-    # Convert search term to lowercase for case-insensitive search
-    search_term = search_term.lower()
-    
-    # Search in Subject and Full Text
-    mask = (df['Subject'].str.lower().str.contains(search_term, na=False) |
-            df['Full Text'].str.lower().str.contains(search_term, na=False))
-    
-    return df[mask]
-
-def highlight_text(text, search_term):
-    """Highlight search term in text using markdown."""
-    if not search_term or not isinstance(text, str):
-        return text
-    
-    # Case-insensitive replacement
-    pattern = re.compile(re.escape(search_term), re.IGNORECASE)
-    return pattern.sub(f"**{search_term}**", text)
-
-def get_cluster_keywords(vectorizer, cluster_center, top_n=5):
-    """Get top keywords for a cluster based on TF-IDF weights."""
-    feature_names = vectorizer.get_feature_names_out()
-    top_indices = cluster_center.argsort()[-top_n:][::-1]
-    return [feature_names[i] for i in top_indices]
-
-def calculate_cluster_similarity(keywords1, keywords2):
-    """Calculate Jaccard similarity between two sets of keywords."""
-    set1 = set(keywords1)
-    set2 = set(keywords2)
-    intersection = len(set1.intersection(set2))
-    union = len(set1.union(set2))
-    return intersection / union if union > 0 else 0
+        return None, None, str(e)
 
 def display_cluster_summary(df, month=None):
-    """Display summary of each cluster with example tickets and full ticket list."""
-    # Get filtered dataframe if search term exists
-    filtered_df = filter_dataframe(df, st.session_state.search_term)
+    """Display summary of each cluster with example tickets."""
+    # Get unique topics excluding outliers (-1)
+    unique_topics = sorted([t for t in df['Cluster'].unique() if t != -1])
     
-    if len(filtered_df) == 0:
-        st.warning("No tickets match the search criteria.")
+    if not unique_topics:
+        st.warning("No topics were found. Try adjusting the clustering parameters.")
         return
     
-    for cluster_id in range(len(df['Cluster'].unique())):
-        cluster_data = filtered_df[filtered_df['Cluster'] == cluster_id]
+    st.write("### Topic Analysis")
+    
+    # Display detailed analysis for each topic
+    for topic in unique_topics:
+        cluster_data = df[df['Cluster'] == topic]
         
-        if len(cluster_data) == 0:
-            continue
-        
-        # Get cluster label
-        cluster_label = st.session_state.custom_labels.get(cluster_id, f"Cluster {cluster_id}")
+        # Get top terms for the topic
+        top_terms = st.session_state.topic_model.get_topic(topic)
+        top_words = [word for word, _ in top_terms[:3]] if top_terms else []
+        topic_header = f"Topic {topic}: {' / '.join(top_words)}" if top_words else f"Topic {topic}"
         
         # Create an expander for each cluster
-        with st.expander(f"### {cluster_label} ({len(cluster_data)} tickets)", expanded=False):
-            # Display cluster statistics
-            st.write(f"#### Cluster Statistics")
-            st.write(f"Total tickets: {len(cluster_data)}")
+        with st.expander(f"### {topic_header} ({len(cluster_data)} tickets)", expanded=False):
+            # Create tabs for different views
+            tab1, tab2 = st.tabs(["📝 Overview & Tickets", "📊 Term Analysis"])
             
-            # Display all tickets in a table
-            st.write("#### All Tickets in Cluster")
-            st.dataframe(
-                cluster_data[['Ticket ID', 'Subject', 'Full Text']],
-                use_container_width=True
-            )
+            with tab1:
+                # Display topic description
+                if top_terms:
+                    description = generate_topic_description(top_terms)
+                    st.markdown(description)
+                else:
+                    st.warning("No terms available for this topic.")
+                
+                st.write("---")
+                
+                # Display tickets table
+                st.write("#### Tickets in This Topic")
+                
+                # Display the tickets table with ID, Subject, and Full Text
+                display_df = cluster_data[['Ticket ID', 'Subject', 'Full Text']]
+                st.dataframe(
+                    display_df,
+                    use_container_width=True,
+                    height=400,
+                    column_config={
+                        "Ticket ID": st.column_config.TextColumn("Ticket ID", width="small"),
+                        "Subject": st.column_config.TextColumn("Subject", width="medium"),
+                        "Full Text": st.column_config.TextColumn("Full Text", width="large")
+                    }
+                )
+                
+                # Create download data once and store in session state
+                if f'download_data_{topic}' not in st.session_state:
+                    st.session_state[f'download_data_{topic}'] = cluster_data.to_csv(index=False).encode('utf-8')
+                
+                # Add download button using stored data
+                st.download_button(
+                    label="📥 Download Topic Data",
+                    data=st.session_state[f'download_data_{topic}'],
+                    file_name=f"topic_{topic}_{month if month else 'data'}.csv",
+                    mime="text/csv",
+                    key=f"download_{topic}"
+                )
             
-            # Add download button for cluster data
-            csv = cluster_data.to_csv(index=False)
-            st.download_button(
-                label="Download Cluster Data",
-                data=csv,
-                file_name=f"cluster_{cluster_id}_{month if month else 'data'}.csv",
-                mime="text/csv",
-                key=f"download_{cluster_id}"
-            )
+            with tab2:
+                if st.session_state.topic_model:
+                    # Display top terms with scores
+                    st.write("#### Key Terms and Importance")
+                    if top_terms:
+                        # Create a more visual representation of term importance
+                        terms_df = pd.DataFrame(top_terms, columns=['Term', 'Score'])
+                        terms_df['Score'] = terms_df['Score'].round(3)
+                        
+                        # Create a bar chart for term importance
+                        fig = px.bar(
+                            terms_df.head(10),
+                            x='Term',
+                            y='Score',
+                            title='Term Importance in Topic',
+                            labels={'Score': 'Importance Score', 'Term': 'Key Terms'}
+                        )
+                        fig.update_layout(xaxis_tickangle=-45)
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                        # Show detailed table
+                        st.write("#### Detailed Term Analysis")
+                        st.dataframe(
+                            terms_df,
+                            use_container_width=True,
+                            column_config={
+                                "Term": st.column_config.TextColumn("Term", width="medium"),
+                                "Score": st.column_config.ProgressColumn(
+                                    "Importance Score",
+                                    min_value=0,
+                                    max_value=float(terms_df['Score'].max()),
+                                    format="%.3f"
+                                )
+                            }
+                        )
         
         st.write("---")
 
+def generate_topic_description(topic_terms):
+    """Generate a natural language description from topic terms."""
+    if not topic_terms or len(topic_terms) == 0:
+        return "No clear pattern identified in this topic."
+    
+    # Extract terms and their scores
+    terms_with_scores = [(term, score) for term, score in topic_terms[:10]]
+    
+    # Group terms by importance
+    high_importance = terms_with_scores[:3]  # Top 3 terms
+    medium_importance = terms_with_scores[3:6]  # Next 3 terms
+    additional_terms = terms_with_scores[6:]  # Remaining terms
+    
+    # Create description parts
+    description_parts = []
+    
+    # Start with the main theme using top terms
+    main_terms = [term for term, _ in high_importance]
+    if main_terms:
+        if len(main_terms) == 1:
+            description_parts.append(f"Tickets in this topic are primarily focused on **{main_terms[0]}** related issues.")
+        else:
+            terms_str = ", ".join(f"**{term}**" for term in main_terms[:-1]) + f" and **{main_terms[-1]}**"
+            description_parts.append(f"This group of tickets deals with issues involving {terms_str}.")
+    
+    # Add medium importance terms with their context
+    if medium_importance:
+        med_terms = [f"**{term}**" for term, _ in medium_importance]
+        description_parts.append(f"These issues frequently involve {', '.join(med_terms)}.")
+    
+    # Add additional context from remaining terms
+    if additional_terms:
+        add_terms = [f"**{term}**" for term, _ in additional_terms]
+        description_parts.append(f"Additional aspects often include {', '.join(add_terms)}.")
+    
+    # Join all parts with proper spacing
+    return "\n\n".join(description_parts)
+
 def plot_cluster_distribution(df, month):
     """Create a bar chart of cluster distribution."""
-    cluster_counts = df['Cluster'].value_counts().reset_index()
+    # Exclude outliers (-1) from visualization
+    cluster_counts = df[df['Cluster'] != -1]['Cluster'].value_counts().reset_index()
     cluster_counts.columns = ['Cluster', 'Count']
     
     # Add custom labels
     cluster_counts['Label'] = cluster_counts['Cluster'].apply(
-        lambda x: st.session_state.custom_labels.get(x, f"Cluster {x}")
+        lambda x: st.session_state.custom_labels.get(x, f"Topic {x}")
     )
     
     fig = px.bar(
         cluster_counts,
         x='Label',
         y='Count',
-        title=f'Cluster Distribution - {month}',
-        labels={'Count': 'Number of Tickets', 'Label': 'Cluster'}
+        title=f'Topic Distribution - {month}',
+        labels={'Count': 'Number of Tickets', 'Label': 'Topic'}
     )
-    return fig
-
-def plot_cluster_metrics(metrics_history):
-    """Plot clustering quality metrics."""
-    if not metrics_history:
-        return None
-    
-    fig = go.Figure()
-    
-    # Add traces for each metric
-    x = list(range(2, len(metrics_history) + 2))
-    
-    silhouette_scores = [m['silhouette'] for m in metrics_history if m['silhouette'] is not None]
-    calinski_scores = [m['calinski'] for m in metrics_history if m['calinski'] is not None]
-    
-    if silhouette_scores:
-        fig.add_trace(go.Scatter(
-            x=x[:len(silhouette_scores)],
-            y=silhouette_scores,
-            name='Silhouette Score'
-        ))
-    
-    if calinski_scores:
-        fig.add_trace(go.Scatter(
-            x=x[:len(calinski_scores)],
-            y=calinski_scores,
-            name='Calinski-Harabasz Score'
-        ))
     
     fig.update_layout(
-        title='Clustering Quality Metrics',
-        xaxis_title='Number of Clusters',
-        yaxis_title='Score',
-        showlegend=True
+        xaxis_tickangle=-45,
+        xaxis={'tickmode': 'array'},
+        height=500
     )
     
     return fig
@@ -473,109 +373,43 @@ if uploaded_file:
         # Clustering parameters
         st.write("### Clustering Parameters")
         
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            vectorizer_type = st.selectbox(
-                "Vectorization Method",
-                ["TF-IDF", "Count"],
-                help="Choose the text vectorization method"
-            )
-            
-            algorithm = st.selectbox(
-                "Clustering Algorithm",
-                ["K-Means", "DBSCAN", "Hierarchical"],
-                help="Choose the clustering algorithm"
-            )
-        
-        with col2:
-            min_df = st.slider(
-                "Minimum Document Frequency",
-                min_value=1,
-                max_value=10,
-                value=1,  # Changed default to 1
-                help="Minimum number of documents a term must appear in"
-            )
-            
-            max_df = st.slider(
-                "Maximum Document Frequency",
-                min_value=0.0,
-                max_value=1.0,
-                value=1.0,  # Changed default to 1.0
-                help="Maximum fraction of documents a term can appear in"
-            )
-        
-        # Algorithm-specific parameters
-        if algorithm == "K-Means" or algorithm == "Hierarchical":
-            n_clusters = st.slider(
-                "Number of clusters",
-                min_value=2,
-                max_value=20,
-                value=5,
-                help="Select the number of clusters to generate"
-            )
-        elif algorithm == "DBSCAN":
-            eps = st.slider(
-                "DBSCAN epsilon",
-                min_value=0.1,
-                max_value=2.0,
-                value=0.5,
-                help="Maximum distance between samples for DBSCAN"
-            )
-        
-        # Search and filter section
-        st.subheader("Search and Filter")
-        search_term = st.text_input(
-            "Search tickets",
-            value=st.session_state.search_term,
-            help="Enter keywords to filter tickets"
+        min_topic_size = st.slider(
+            "Minimum Topic Size",
+            min_value=2,
+            max_value=20,
+            value=3,
+            help="Minimum number of tickets in a topic"
         )
-        st.session_state.search_term = search_term
         
         if st.button("Perform Clustering"):
-            # Prepare clustering parameters
-            clustering_params = {
-                "vectorizer_type": vectorizer_type,
-                "algorithm": algorithm,
-                "min_df": min_df,
-                "max_df": max_df,
-                "n_clusters": n_clusters if algorithm != "DBSCAN" else None,
-                "eps": eps if algorithm == "DBSCAN" else None
-            }
-            
-            # Perform clustering
-            cluster_labels, silhouette, calinski = perform_clustering(df, clustering_params)
-            
-            # Add cluster labels to dataframe
-            df['Cluster'] = cluster_labels
-            st.session_state.monthly_data[selected_month] = df
-            
-            # Display clustering metrics
-            if silhouette is not None and calinski is not None:
-                st.write("### Clustering Quality Metrics")
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.metric("Silhouette Score", f"{silhouette:.3f}")
-                with col2:
-                    st.metric("Calinski-Harabasz Score", f"{calinski:.1f}")
-            
-            # Display cluster summary
-            st.subheader(f"Cluster Summary - {selected_month}")
-            display_cluster_summary(df, selected_month)
-            
-            # Show cluster distribution plot
-            st.plotly_chart(plot_cluster_distribution(df, selected_month))
-        
-        # If clustering was previously performed, show the summary
-        elif 'Cluster' in st.session_state.monthly_data[selected_month].columns:
-            st.subheader(f"Cluster Summary - {selected_month}")
-            display_cluster_summary(st.session_state.monthly_data[selected_month], selected_month)
-            
-            # Show cluster distribution plot
-            st.plotly_chart(plot_cluster_distribution(
-                st.session_state.monthly_data[selected_month],
-                selected_month
-            ))
+            with st.spinner("Performing clustering..."):
+                try:
+                    # Prepare clustering parameters
+                    clustering_params = {
+                        "min_topic_size": min_topic_size
+                    }
+                    
+                    # Perform clustering
+                    topics, probs, error = perform_clustering(df, clustering_params)
+                    
+                    if topics is not None and error is None:
+                        # Add cluster labels to dataframe
+                        df['Cluster'] = topics
+                        st.session_state.monthly_data[selected_month] = df
+                        
+                        # Count number of meaningful topics
+                        n_topics = len(set([t for t in topics if t != -1]))
+                        st.success(f"Successfully identified {n_topics} topics!")
+                        
+                        # Display cluster summary
+                        display_cluster_summary(df, selected_month)
+                    else:
+                        st.error(f"Clustering failed: {error if error else 'Unknown error'}")
+                        st.info("Try adjusting the minimum topic size or check your input data.")
+                
+                except Exception as e:
+                    st.error(f"An error occurred: {str(e)}")
+                    st.info("Please try again with different parameters or check your input data.")
 
 # Month-to-month comparison section
 if len(st.session_state.monthly_data) > 1:
@@ -595,32 +429,9 @@ if len(st.session_state.monthly_data) > 1:
         df2 = st.session_state.monthly_data[month2]
         
         if 'Cluster' in df1.columns and 'Cluster' in df2.columns:
-            # Compare cluster distributions
+            # Compare distributions
             fig1 = plot_cluster_distribution(df1, month1)
             fig2 = plot_cluster_distribution(df2, month2)
             
             st.plotly_chart(fig1)
-            st.plotly_chart(fig2)
-            
-            # Compare cluster similarities if vectorizer is available
-            if st.session_state.vectorizer and st.session_state.cluster_model:
-                st.subheader("Cluster Topic Similarity")
-                
-                for cluster1 in range(len(df1['Cluster'].unique())):
-                    keywords1 = get_cluster_keywords(
-                        st.session_state.vectorizer,
-                        st.session_state.cluster_model.cluster_centers_[cluster1]
-                    )
-                    
-                    for cluster2 in range(len(df2['Cluster'].unique())):
-                        keywords2 = get_cluster_keywords(
-                            st.session_state.vectorizer,
-                            st.session_state.cluster_model.cluster_centers_[cluster2]
-                        )
-                        
-                        similarity = calculate_cluster_similarity(keywords1, keywords2)
-                        if similarity > 0.3:  # Only show significant similarities
-                            st.write(
-                                f"Similarity between {month1} Cluster {cluster1} and "
-                                f"{month2} Cluster {cluster2}: {similarity:.2f}"
-                            ) 
+            st.plotly_chart(fig2) 
