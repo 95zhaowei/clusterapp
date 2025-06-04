@@ -111,23 +111,24 @@ def plot_topic_trends(topic_trends, title="Topic Trends Over Time"):
             color="black"
         ),
         xaxis=dict(
-            tickangle=-45,
+            title=dict(
+                text="Time Period",
+                font=dict(size=14, color="black")
+            ),
+            tickfont=dict(size=12, color="black"),
             showgrid=True,
             gridcolor='rgba(0,0,0,0.1)',
-            linecolor='black',
-            tickfont=dict(
-                family="Source Sans Pro, sans-serif",
-                color="black"
-            )
+            linecolor='black'
         ),
         yaxis=dict(
+            title=dict(
+                text="Number of Tickets",
+                font=dict(size=14, color="black")
+            ),
+            tickfont=dict(size=12, color="black"),
             showgrid=True,
             gridcolor='rgba(0,0,0,0.1)',
-            linecolor='black',
-            tickfont=dict(
-                family="Source Sans Pro, sans-serif",
-                color="black"
-            )
+            linecolor='black'
         ),
         legend_title=dict(
             text="Topic Clusters",
@@ -138,7 +139,6 @@ def plot_topic_trends(topic_trends, title="Topic Trends Over Time"):
             )
         ),
         height=500,
-        # Improve legend readability
         legend=dict(
             yanchor="top",
             y=0.99,
@@ -156,7 +156,6 @@ def plot_topic_trends(topic_trends, title="Topic Trends Over Time"):
             itemwidth=30,
             tracegroupgap=5
         ),
-        # Ensure the plot area accommodates the legend
         margin=dict(r=350, t=50, b=50, l=50),
         plot_bgcolor='white',
         paper_bgcolor='white'
@@ -435,8 +434,10 @@ def plot_topic_distribution(df, topic_model):
             color="black"
         ),
         xaxis=dict(
-            title="Topic",
-            titlefont=dict(size=14, color="black"),
+            title=dict(
+                text="Topic",
+                font=dict(size=14, color="black")
+            ),
             tickfont=dict(size=12, color="black"),
             showgrid=True,
             gridcolor='rgba(0,0,0,0.1)',
@@ -444,8 +445,10 @@ def plot_topic_distribution(df, topic_model):
             tickangle=-45
         ),
         yaxis=dict(
-            title="Number of Tickets",
-            titlefont=dict(size=14, color="black"),
+            title=dict(
+                text="Number of Tickets",
+                font=dict(size=14, color="black")
+            ),
             tickfont=dict(size=12, color="black"),
             showgrid=True,
             gridcolor='rgba(0,0,0,0.1)',
@@ -540,7 +543,27 @@ def display_cluster_summary(df):
                             title='Term Importance in Topic',
                             labels={'Score': 'Importance Score', 'Term': 'Key Terms'}
                         )
-                        fig.update_layout(xaxis_tickangle=-45)
+                        fig.update_layout(
+                            font=dict(
+                                family="Source Sans Pro, sans-serif",
+                                color="black"
+                            ),
+                            xaxis=dict(
+                                title=dict(
+                                    text="Key Terms",
+                                    font=dict(size=14, color="black")
+                                ),
+                                tickfont=dict(size=12, color="black"),
+                                tickangle=-45
+                            ),
+                            yaxis=dict(
+                                title=dict(
+                                    text="Importance Score",
+                                    font=dict(size=14, color="black")
+                                ),
+                                tickfont=dict(size=12, color="black")
+                            )
+                        )
                         st.plotly_chart(fig, use_container_width=True)
                         
                         # Show detailed table
