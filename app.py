@@ -38,18 +38,29 @@ if 'topic_summaries' not in st.session_state:
     st.session_state.topic_summaries = {}
 
 def clean_text(text):
-    """Clean and preprocess text data."""
+    """Clean and preprocess text data while preserving technical terms."""
     if not isinstance(text, str):
         return ""
     
     # Convert to lowercase
     text = text.lower()
     
-    # Remove special characters but keep important punctuation
-    text = re.sub(r'[^a-zA-Z\s.,!?]', '', text)
+    # Replace common technical patterns with placeholders
+    text = re.sub(r'(?<=[a-zA-Z])_(?=[a-zA-Z])', ' UNDERSCORE ', text)  # preserve snake_case
+    text = re.sub(r'(?<=[a-z])(?=[A-Z])', ' ', text)  # split camelCase
+    text = re.sub(r'([a-zA-Z])(\d+)', r'\1 \2', text)  # split letters and numbers
     
-    # Remove extra whitespace
+    # Remove URLs but keep domains
+    text = re.sub(r'https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+[^\s]*', '', text)
+    
+    # Keep alphanumeric, spaces, and important punctuation
+    text = re.sub(r'[^a-zA-Z0-9\s.,!?@#$%&*()-_]', ' ', text)
+    
+    # Replace multiple spaces with single space
     text = ' '.join(text.split())
+    
+    # Replace placeholders back
+    text = text.replace(' UNDERSCORE ', '_')
     
     return text
 
@@ -71,31 +82,41 @@ def process_uploaded_file(uploaded_file):
     return None
 
 def create_topic_model(min_topic_size=5):
-    """Create a BERTopic model with custom parameters."""
-    # Initialize UMAP for dimensionality reduction
+    """Create a BERTopic model with optimized parameters."""
+    # Initialize UMAP for dimensionality reduction with optimized parameters
     umap_model = UMAP(
-        n_neighbors=15,
+        n_neighbors=min(15, min_topic_size),  # Adaptive neighborhood size
         n_components=5,
-        min_dist=0.0,
+        min_dist=0.1,  # Increased for better separation
         metric='cosine',
-        random_state=42
+        random_state=42,
+        low_memory=True,
+        n_jobs=-1  # Use all available cores
     )
     
-    # Initialize HDBSCAN for clustering
+    # Initialize HDBSCAN with optimized parameters
     hdbscan_model = HDBSCAN(
         min_cluster_size=min_topic_size,
+        min_samples=min(5, min_topic_size),  # Adaptive minimum samples
         metric='euclidean',
         cluster_selection_method='eom',
-        prediction_data=True
+        prediction_data=True,
+        core_dist_n_jobs=-1,  # Use all available cores
+        alpha=1.2  # Slightly more conservative clustering
     )
     
-    # Create BERTopic model
+    # Create BERTopic model with improved parameters
     topic_model = BERTopic(
-        embedding_model='all-MiniLM-L6-v2',
+        # Using a more powerful multilingual model
+        embedding_model="paraphrase-multilingual-mpnet-base-v2",
         umap_model=umap_model,
         hdbscan_model=hdbscan_model,
         calculate_probabilities=True,
-        verbose=True
+        verbose=True,
+        # Additional parameters for better topic representation
+        top_n_words=15,  # Increase number of words per topic
+        min_topic_size=min_topic_size,
+        nr_topics="auto"  # Let the model determine optimal number of topics
     )
     
     return topic_model
