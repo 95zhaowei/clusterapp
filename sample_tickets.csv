@@ -1,101 +1,101 @@
-Ticket ID,Subject,Full Text
-TICK-001,Login Failed - Invalid Credentials,User unable to login to the dashboard. Receiving 'Invalid credentials' error message despite using correct username and password. Multiple attempts resulted in the same error. User has verified email is correct.
-TICK-002,Dashboard Loading Time Issues,Dashboard takes more than 30 seconds to load. User reports slow performance specifically when accessing the analytics section. Chrome browser Version 120.0.6099.130.
-TICK-003,Export Feature Not Working,Unable to export reports to PDF format. When clicking the export button nothing happens. No error message displayed. This is blocking monthly reporting tasks.
-TICK-004,Mobile App Crashes on Startup,iOS app version 2.1.0 crashes immediately after splash screen. iPhone 13 Pro running iOS 16.5. User has tried reinstalling the app with no success.
-TICK-005,Password Reset Email Not Received,User requested password reset 30 minutes ago but hasn't received the email. Checked spam folder. Email address verified correct in system.
-TICK-006,Data Sync Error with Integration,Integration with Salesforce not syncing new customer data. Last successful sync was 12 hours ago. No error logs visible in dashboard.
-TICK-007,Report Generation Timeout,Monthly analytics report generation fails with timeout error after 5 minutes. Report contains standard metrics for 50 users.
-TICK-008,API Rate Limit Exceeded,Receiving 429 Too Many Requests errors from API. Need urgent increase in rate limit for production environment.
-TICK-009,Custom Widget Not Saving,Changes made to dashboard custom widget not saving. Settings appear to save but revert upon page refresh.
-TICK-010,Database Connection Timeout,Intermittent database connection timeouts occurring during peak hours. Affecting multiple users in EU region.
-TICK-011,User Permission Issues,New team member cannot access project documents despite having correct role assignment. Permission changes not taking effect.
-TICK-012,Search Function Not Working,Global search feature returns no results for known existing items. Search worked fine yesterday. No recent deployments.
-TICK-013,SSL Certificate Expiration Warning,Received warning about SSL certificate expiring in 15 days. Need assistance with renewal process.
-TICK-014,Missing Data in Reports,Weekly report missing data from Tuesday to Thursday. All other days show correct data. No system downtime reported.
-TICK-015,Account Lockout Issue,Account automatically locked after single failed login attempt. Should allow 3 attempts as per security policy.
-TICK-016,Mobile App Battery Drain,Latest app update causing significant battery drain on Android devices. Battery usage shows app running in background.
-TICK-017,Broken Image Links,Product images not loading in catalog section. Shows broken image icon. URLs appear correct in source code.
-TICK-018,Notification Delays,Push notifications delayed by approximately 15 minutes. Time-sensitive alerts not arriving promptly.
-TICK-019,Calendar Integration Failed,Google Calendar integration stopped working after latest update. Cannot sync events or send invites.
-TICK-020,Form Validation Error,Contact form submission fails with validation error but no specific error message shown to users.
-TICK-021,Print Layout Issues,Report print layout broken. Tables split across pages incorrectly and some text overlapping.
-TICK-022,Data Import Failure,Bulk data import failed for 5000 records CSV file. No error log generated. Import tool stops responding.
-TICK-023,Video Playback Error,Training videos not playing in Chrome browser. Works in Firefox. Error message: 'Format not supported'.
-TICK-024,Duplicate Transactions,Payment system showing duplicate transactions for single purchases. Affecting customer invoices.
-TICK-025,Email Template Broken,HTML email template rendering incorrectly in Outlook. Images misaligned and formatting lost.
-TICK-026,Session Timeout Too Short,Users being logged out after 5 minutes of inactivity. Should be 30 minutes per settings.
-TICK-027,Report Export Limit,Unable to export reports with more than 1000 rows. Need capability for larger datasets.
-TICK-028,Missing Audit Logs,Audit logs for user actions between 2PM-4PM yesterday are missing. Need data for compliance.
-TICK-029,Profile Picture Upload Failed,User unable to upload new profile picture. Gets 'File type not supported' error for JPG file.
-TICK-030,Broken Dashboard Link,Link to analytics dashboard from email notifications returning 404 error.
-TICK-031,API Documentation Error,API endpoint documentation shows incorrect parameters for /users/update endpoint.
-TICK-032,Chart Data Mismatch,Pie chart data doesn't match table values in sales dashboard. Percentages don't add up to 100%.
-TICK-033,Failed Backup Alert,Automated system backup failed last night. Error log shows insufficient storage space.
-TICK-034,Menu Items Unclickable,Dropdown menu items in navigation bar cannot be clicked in Safari browser only.
-TICK-035,Incorrect Currency Display,Prices showing in USD instead of EUR for European customers despite correct region setting.
-TICK-036,File Upload Size Limit,Need to increase file upload size limit from 10MB to 25MB for document sharing feature.
-TICK-037,Missing Translation,French language option missing several translations in settings menu. Shows English fallback.
-TICK-038,Webhook Delivery Failure,Webhook notifications not being delivered to endpoint. No error in webhook logs.
-TICK-039,Custom Domain SSL Issue,Custom domain showing SSL certificate error after renewal. Certificate appears correctly installed.
-TICK-040,Report Scheduling Failed,Scheduled weekly reports not being generated and sent. Automation service not triggering.
-TICK-041,User Group Sync Error,Active Directory user group changes not syncing to platform. Manual sync also failing.
-TICK-042,Dashboard Filter Reset,Dashboard filters reset to default when switching between tabs. Should maintain selection.
-TICK-043,Broken Sort Function,Column sorting not working in data tables. Clicking sort arrows has no effect.
-TICK-044,API Response Delay,API responses taking 10+ seconds for simple queries. Usually responds within 500ms.
-TICK-045,Missing Confirmation Emails,Order confirmation emails not being sent for purchases made in last 2 hours.
-TICK-046,Mobile Menu Bug,Mobile navigation menu stays open after selecting item. Requires page refresh to close.
-TICK-047,Data Export Format,Need option to export data in XML format. Currently only CSV and JSON supported.
-TICK-048,Login Page Redirect Issue,Login page redirects to 404 after successful authentication occasionally.
-TICK-049,Report Filter Bug,Applying date filter to reports shows no data even for valid date ranges.
-TICK-050,Cache Clear Required,Users requiring frequent cache clearing to see updated content. Caching policy needs review.
-TICK-051,Field Validation Error,Phone number field accepting invalid formats. Need stricter validation rules.
-TICK-052,Notification Settings Reset,Email notification settings reverting to default after system update.
-TICK-053,CSV Import Validation,Need better error messages for CSV import validation failures.
-TICK-054,Role Permission Conflict,Admin and Manager role permissions causing conflict in document approval workflow.
-TICK-055,Search Index Update,Search not showing recently added items. Index update seems delayed.
-TICK-056,Payment Gateway Timeout,Payment processing timing out during high traffic periods. Need scalability solution.
-TICK-057,Audit Log Export,Need ability to export audit logs in PDF format for compliance reporting.
-TICK-058,Browser Compatibility,Rich text editor not working in Internet Explorer 11. Works in other browsers.
-TICK-059,Data Visualization Error,Geographic heat map not displaying color gradients correctly. Shows single color.
-TICK-060,Auto-Save Not Working,Document editor auto-save feature not functioning. Changes lost if page closed.
-TICK-061,API Authentication Error,API requests failing with authentication error despite valid token.
-TICK-062,Report Template Missing,Unable to find Q4 report template in template library. Was available last week.
-TICK-063,User Deactivation Issue,Deactivated users still receiving system notifications despite status change.
-TICK-064,Dashboard Loading Error,Executive dashboard fails to load with error: 'Unable to fetch metrics'.
-TICK-065,File Preview Not Working,PDF file preview not generating for documents larger than 5MB.
-TICK-066,SSO Integration Problem,Single Sign-On integration with Okta showing intermittent failures.
-TICK-067,Custom Field Data Loss,Custom field data disappearing when editing user profiles.
-TICK-068,Workflow Trigger Issue,Automated workflow not triggering for high priority tickets.
-TICK-069,Analytics Data Delay,Real-time analytics data showing 30-minute delay in updates.
-TICK-070,Password Policy Bypass,System allowing passwords that don't meet complexity requirements.
-TICK-071,Report Access Denied,Users with correct permissions getting access denied for specific reports.
-TICK-072,Email Bounce Issues,High email bounce rate for notification emails sent to .gov domains.
-TICK-073,Data Migration Error,Error in customer data migration script. Some fields mapped incorrectly.
-TICK-074,Chart Export Quality,Exported chart images are low resolution. Need higher quality output.
-TICK-075,Activity Log Gap,Activity log missing entries between 3 AM and 4 AM this morning.
-TICK-076,Tag Management Error,Unable to delete unused tags from tag management system.
-TICK-077,Bulk Update Failed,Bulk status update operation failed for selected 200 tickets.
-TICK-078,Integration Timeout,Zendesk integration timing out during ticket sync process.
-TICK-079,Dashboard Save Error,Cannot save changes to dashboard layout. Gives 'Unknown error'.
-TICK-080,Formula Calculation Bug,Custom formula field calculating incorrect values for negative numbers.
-TICK-081,Access Log Request,Need access logs for specific user activities last month for audit.
-TICK-082,Plugin Compatibility,New plugin version 2.1 not compatible with current platform version.
-TICK-083,Data Retention Issue,Old records not being archived per retention policy settings.
-TICK-084,SSL Handshake Error,API calls failing with SSL handshake error from specific client.
-TICK-085,Report Scheduling Limit,Need to increase limit of scheduled reports per user from 5 to 10.
-TICK-086,Widget Loading Failed,Custom dashboard widget failed to load: 'Script error in source'.
-TICK-087,User Import Validation,Bulk user import failing validation for specific email formats.
-TICK-088,Metric Calculation Error,Customer satisfaction metric showing incorrect calculation in reports.
-TICK-089,Template Variable Bug,Email template variables not populating in automated notifications.
-TICK-090,Access Control Issue,Department-level access controls not applying to shared documents.
-TICK-091,Data Aggregation Error,Weekly data aggregation job failed to combine daily reports.
-TICK-092,Character Encoding Problem,Special characters in exported reports showing as garbage text.
-TICK-093,Workflow Rule Conflict,Two automation rules creating conflict in ticket assignment process.
-TICK-094,API Versioning Issue,API v1 endpoints still accessible despite being deprecated.
-TICK-095,SLA Calculation Error,SLA breach calculations incorrect for tickets spanning midnight.
-TICK-096,Report Time Zone Issue,Report timestamps showing UTC instead of local timezone.
-TICK-097,Keyword Alert Failure,Keyword alert system not triggering for monitored terms.
-TICK-098,Database Query Timeout,Complex report queries timing out in production environment.
-TICK-099,Field Dependency Error,Dependent field values not updating when parent field changes.
-TICK-100,Archive Access Problem,Unable to access archived tickets older than 12 months. 
+Ticket ID,Subject,Full Text,Date
+TICK-001,Login Failed - Invalid Credentials,User unable to login to the dashboard. Receiving 'Invalid credentials' error message despite using correct username and password. Multiple attempts resulted in the same error. User has verified email is correct.,2025-01-02
+TICK-002,Dashboard Loading Time Issues,Dashboard takes more than 30 seconds to load. User reports slow performance specifically when accessing the analytics section. Chrome browser Version 120.0.6099.130.,2025-01-02
+TICK-003,Export Feature Not Working,Unable to export reports to PDF format. When clicking the export button nothing happens. No error message displayed. This is blocking monthly reporting tasks.,2025-01-02
+TICK-004,Mobile App Crashes on Startup,iOS app version 2.1.0 crashes immediately after splash screen. iPhone 13 Pro running iOS 16.5. User has tried reinstalling the app with no success.,2025-01-02
+TICK-005,Password Reset Email Not Received,User requested password reset 30 minutes ago but hasn't received the email. Checked spam folder. Email address verified correct in system.,2025-01-03
+TICK-006,Data Sync Error with Integration,Integration with Salesforce not syncing new customer data. Last successful sync was 12 hours ago. No error logs visible in dashboard.,2025-01-03
+TICK-007,Report Generation Timeout,Monthly analytics report generation fails with timeout error after 5 minutes. Report contains standard metrics for 50 users.,2025-01-04
+TICK-008,API Rate Limit Exceeded,Receiving 429 Too Many Requests errors from API. Need urgent increase in rate limit for production environment.,2025-01-04
+TICK-009,Custom Widget Not Saving,Changes made to dashboard custom widget not saving. Settings appear to save but revert upon page refresh.,2025-01-04
+TICK-010,Database Connection Timeout,Intermittent database connection timeouts occurring during peak hours. Affecting multiple users in EU region.,2025-01-06
+TICK-011,User Permission Issues,New team member cannot access project documents despite having correct role assignment. Permission changes not taking effect.,2025-01-07
+TICK-012,Search Function Not Working,Global search feature returns no results for known existing items. Search worked fine yesterday. No recent deployments.,2025-01-07
+TICK-013,SSL Certificate Expiration Warning,Received warning about SSL certificate expiring in 15 days. Need assistance with renewal process.,2025-01-08
+TICK-014,Missing Data in Reports,Weekly report missing data from Tuesday to Thursday. All other days show correct data. No system downtime reported.,2025-01-08
+TICK-015,Account Lockout Issue,Account automatically locked after single failed login attempt. Should allow 3 attempts as per security policy.,2025-01-08
+TICK-016,Mobile App Battery Drain,Latest app update causing significant battery drain on Android devices. Battery usage shows app running in background.,2025-01-09
+TICK-017,Broken Image Links,Product images not loading in catalog section. Shows broken image icon. URLs appear correct in source code.,2025-01-09
+TICK-018,Notification Delays,Push notifications delayed by approximately 15 minutes. Time-sensitive alerts not arriving promptly.,2025-01-10
+TICK-019,Calendar Integration Failed,Google Calendar integration stopped working after latest update. Cannot sync events or send invites.,2025-01-11
+TICK-020,Form Validation Error,Contact form submission fails with validation error but no specific error message shown to users.,2025-01-11
+TICK-021,Print Layout Issues,Report print layout broken. Tables split across pages incorrectly and some text overlapping.,2025-01-12
+TICK-022,Data Import Failure,Bulk data import failed for 5000 records CSV file. No error log generated. Import tool stops responding.,2025-01-14
+TICK-023,Video Playback Error,Training videos not playing in Chrome browser. Works in Firefox. Error message: 'Format not supported'.,2025-01-14
+TICK-024,Duplicate Transactions,Payment system showing duplicate transactions for single purchases. Affecting customer invoices.,2025-01-14
+TICK-025,Email Template Broken,HTML email template rendering incorrectly in Outlook. Images misaligned and formatting lost.,2025-01-14
+TICK-026,Session Timeout Too Short,Users being logged out after 5 minutes of inactivity. Should be 30 minutes per settings.,2025-01-15
+TICK-027,Report Export Limit,Unable to export reports with more than 1000 rows. Need capability for larger datasets.,2025-01-15
+TICK-028,Missing Audit Logs,Audit logs for user actions between 2PM-4PM yesterday are missing. Need data for compliance.,2025-01-15
+TICK-029,Profile Picture Upload Failed,User unable to upload new profile picture. Gets 'File type not supported' error for JPG file.,2025-01-16
+TICK-030,Broken Dashboard Link,Link to analytics dashboard from email notifications returning 404 error.,2025-01-17
+TICK-031,API Documentation Error,API endpoint documentation shows incorrect parameters for /users/update endpoint.,2025-01-18
+TICK-032,Chart Data Mismatch,Pie chart data doesn't match table values in sales dashboard. Percentages don't add up to 100%.,2025-01-18
+TICK-033,Failed Backup Alert,Automated system backup failed last night. Error log shows insufficient storage space.,2025-01-19
+TICK-034,Menu Items Unclickable,Dropdown menu items in navigation bar cannot be clicked in Safari browser only.,2025-01-20
+TICK-035,Incorrect Currency Display,Prices showing in USD instead of EUR for European customers despite correct region setting.,2025-01-21
+TICK-036,File Upload Size Limit,Need to increase file upload size limit from 10MB to 25MB for document sharing feature.,2025-01-21
+TICK-037,Missing Translation,French language option missing several translations in settings menu. Shows English fallback.,2025-01-21
+TICK-038,Webhook Delivery Failure,Webhook notifications not being delivered to endpoint. No error in webhook logs.,2025-01-21
+TICK-039,Custom Domain SSL Issue,Custom domain showing SSL certificate error after renewal. Certificate appears correctly installed.,2025-01-22
+TICK-040,Report Scheduling Failed,Scheduled weekly reports not being generated and sent. Automation service not triggering.,2025-01-22
+TICK-041,User Group Sync Error,Active Directory user group changes not syncing to platform. Manual sync also failing.,2025-01-23
+TICK-042,Dashboard Filter Reset,Dashboard filters reset to default when switching between tabs. Should maintain selection.,2025-01-23
+TICK-043,Broken Sort Function,Column sorting not working in data tables. Clicking sort arrows has no effect.,2025-01-24
+TICK-044,API Response Delay,API responses taking 10+ seconds for simple queries. Usually responds within 500ms.,2025-01-24
+TICK-045,Missing Confirmation Emails,Order confirmation emails not being sent for purchases made in last 2 hours.,2025-01-24
+TICK-046,Mobile Menu Bug,Mobile navigation menu stays open after selecting item. Requires page refresh to close.,2025-01-25
+TICK-047,Data Export Format,Need option to export data in XML format. Currently only CSV and JSON supported.,2025-01-25
+TICK-048,Login Page Redirect Issue,Login page redirects to 404 after successful authentication occasionally.,2025-01-26
+TICK-049,Report Filter Bug,Applying date filter to reports shows no data even for valid date ranges.,2025-01-26
+TICK-050,Cache Clear Required,Users requiring frequent cache clearing to see updated content. Caching policy needs review.,2025-01-27
+TICK-051,Field Validation Error,Phone number field accepting invalid formats. Need stricter validation rules.,2025-01-28
+TICK-052,Notification Settings Reset,Email notification settings reverting to default after system update.,2025-01-28
+TICK-053,CSV Import Validation,Need better error messages for CSV import validation failures.,2025-01-29
+TICK-054,Role Permission Conflict,Admin and Manager role permissions causing conflict in document approval workflow.,2025-01-29
+TICK-055,Search Index Update,Search not showing recently added items. Index update seems delayed.,2025-01-30
+TICK-056,Payment Gateway Timeout,Payment processing timing out during high traffic periods. Need scalability solution.,2025-01-31
+TICK-057,Audit Log Export,Need ability to export audit logs in PDF format for compliance reporting.,2025-02-02
+TICK-058,Browser Compatibility,Rich text editor not working in Internet Explorer 11. Works in other browsers.,2025-02-03
+TICK-059,Data Visualization Error,Geographic heat map not displaying color gradients correctly. Shows single color.,2025-02-04
+TICK-060,Auto-Save Not Working,Document editor auto-save feature not functioning. Changes lost if page closed.,2025-02-05
+TICK-061,API Authentication Error,API requests failing with authentication error despite valid token.,2025-02-05
+TICK-062,Report Template Missing,Unable to find Q4 report template in template library. Was available last week.,2025-02-05
+TICK-063,User Deactivation Issue,Deactivated users still receiving system notifications despite status change.,2025-02-06
+TICK-064,Dashboard Loading Error,Executive dashboard fails to load with error: 'Unable to fetch metrics'.,2025-02-07
+TICK-065,File Preview Not Working,PDF file preview not generating for documents larger than 5MB.,2025-02-08
+TICK-066,SSO Integration Problem,Single Sign-On integration with Okta showing intermittent failures.,2025-02-08
+TICK-067,Custom Field Data Loss,Custom field data disappearing when editing user profiles.,2025-02-08
+TICK-068,Workflow Trigger Issue,Automated workflow not triggering for high priority tickets.,2025-02-09
+TICK-069,Analytics Data Delay,Real-time analytics data showing 30-minute delay in updates.,2025-02-09
+TICK-070,Password Policy Bypass,System allowing passwords that don't meet complexity requirements.,2025-02-09
+TICK-071,Report Access Denied,Users with correct permissions getting access denied for specific reports.,2025-02-11
+TICK-072,Email Bounce Issues,High email bounce rate for notification emails sent to .gov domains.,2025-02-11
+TICK-073,Data Migration Error,Error in customer data migration script. Some fields mapped incorrectly.,2025-02-12
+TICK-074,Chart Export Quality,Exported chart images are low resolution. Need higher quality output.,2025-02-13
+TICK-075,Activity Log Gap,Activity log missing entries between 3 AM and 4 AM this morning.,2025-02-13
+TICK-076,Tag Management Error,Unable to delete unused tags from tag management system.,2025-02-13
+TICK-077,Bulk Update Failed,Bulk status update operation failed for selected 200 tickets.,2025-02-13
+TICK-078,Integration Timeout,Zendesk integration timing out during ticket sync process.,2025-02-13
+TICK-079,Dashboard Save Error,Cannot save changes to dashboard layout. Gives 'Unknown error'.,2025-02-16
+TICK-080,Formula Calculation Bug,Custom formula field calculating incorrect values for negative numbers.,2025-02-16
+TICK-081,Access Log Request,Need access logs for specific user activities last month for audit.,2025-02-16
+TICK-082,Plugin Compatibility,New plugin version 2.1 not compatible with current platform version.,2025-02-17
+TICK-083,Data Retention Issue,Old records not being archived per retention policy settings.,2025-02-18
+TICK-084,SSL Handshake Error,API calls failing with SSL handshake error from specific client.,2025-02-19
+TICK-085,Report Scheduling Limit,Need to increase limit of scheduled reports per user from 5 to 10.,2025-02-19
+TICK-086,Widget Loading Failed,Custom dashboard widget failed to load: 'Script error in source'.,2025-02-20
+TICK-087,User Import Validation,Bulk user import failing validation for specific email formats.,2025-02-20
+TICK-088,Metric Calculation Error,Customer satisfaction metric showing incorrect calculation in reports.,2025-02-21
+TICK-089,Template Variable Bug,Email template variables not populating in automated notifications.,2025-02-21
+TICK-090,Access Control Issue,Department-level access controls not applying to shared documents.,2025-02-22
+TICK-091,Data Aggregation Error,Weekly data aggregation job failed to combine daily reports.,2025-02-22
+TICK-092,Character Encoding Problem,Special characters in exported reports showing as garbage text.,2025-02-22
+TICK-093,Workflow Rule Conflict,Two automation rules creating conflict in ticket assignment process.,2025-02-23
+TICK-094,API Versioning Issue,API v1 endpoints still accessible despite being deprecated.,2025-02-23
+TICK-095,SLA Calculation Error,SLA breach calculations incorrect for tickets spanning midnight.,2025-02-24
+TICK-096,Report Time Zone Issue,Report timestamps showing UTC instead of local timezone.,2025-02-26
+TICK-097,Keyword Alert Failure,Keyword alert system not triggering for monitored terms.,2025-02-26
+TICK-098,Database Query Timeout,Complex report queries timing out in production environment.,2025-02-27
+TICK-099,Field Dependency Error,Dependent field values not updating when parent field changes.,2025-02-27
+TICK-100,Archive Access Problem,Unable to access archived tickets older than 12 months. ,2025-02-27
