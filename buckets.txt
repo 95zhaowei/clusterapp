@@ -1,0 +1,90 @@
+API
+Activity
+Address
+Balance
+Balance Statement/Borderless
+Bank Account Details
+Batch Group
+Bulk Settlement
+Card
+Card Order
+Card Transaction
+Claim Amount
+Client Credentials
+Comparison
+Contact
+Currencies
+Delivery Estimate
+Deprecated API
+Direct Debit Account
+Disputes
+FaceTec
+Fund
+JOSE
+Multi Currency Account
+One Time Token
+Other
+Partner Cases
+Payin Deposit Detail
+Profile
+Push Provisioning
+Quote
+Rate
+Recipient Account
+Simulation
+Spend Controls
+Spend Limits
+Suggestion
+Transfer
+User
+User Security
+USer Tokens
+Verification
+Webhooks
+
+PRODUCT
+Approvals
+Access (Non-Partner)
+API Token
+Defect
+Environment Down
+Fund
+General Question
+mTLS
+Other
+Notification
+Payments
+Requirements
+SCA (How To)
+Suggestion
+Transfer Status
+
+DOCUMENTATION
+Additional Need
+Clarification
+Defect
+Deprecation
+Other 
+Suggestion
+
+SECURITY
+Defect
+Other
+SCA Issue
+Secret Rotation
+Spam
+Suggestion
+
+OAUTH
+Access (How to)
+Defect
+Credentials Request
+Other 
+Suggestion
+
+OPENBANKING
+Defect
+Onboarding
+Other
+Suggestion
+Update
