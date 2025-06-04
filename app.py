@@ -11,9 +11,200 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 import plotly.express as px
 import plotly.graph_objects as go
-from datetime import datetime
+from datetime import datetime, timedelta
 from collections import Counter
 from itertools import chain
+from transformers import pipeline
+
+# Initialize summarization model
+@st.cache_resource
+def get_summarizer():
+    """Initialize and return the BART summarization model."""
+    return pipeline("summarization", model="facebook/bart-large-cnn")
+
+# Initialize session state for summaries
+if 'ticket_summaries' not in st.session_state:
+    st.session_state.ticket_summaries = {}
+
+def parse_date(date_str):
+    """Parse date string to datetime object."""
+    try:
+        # Try common date formats
+        for fmt in ['%Y-%m-%d', '%d/%m/%Y', '%m/%d/%Y', '%Y/%m/%d']:
+            try:
+                return datetime.strptime(date_str, fmt)
+            except ValueError:
+                continue
+        return None
+    except:
+        return None
+
+def get_time_period(date, period='week'):
+    """Convert date to specified time period."""
+    if period == 'day':
+        return date.strftime('%Y-%m-%d')
+    elif period == 'week':
+        return f"{date.year}-W{date.isocalendar()[1]}"
+    else:  # month
+        return date.strftime('%Y-%m')
+
+def analyze_topic_trends(df, time_period='week'):
+    """Analyze topic trends over time."""
+    if 'Date' not in df.columns or 'Cluster' not in df.columns:
+        return None
+    
+    # Convert dates and group by time period
+    df['Period'] = df['Date'].apply(lambda x: get_time_period(x, time_period))
+    
+    # Calculate topic frequencies per period
+    topic_trends = df.groupby(['Period', 'Cluster']).size().unstack(fill_value=0)
+    
+    # Sort by period
+    topic_trends = topic_trends.sort_index()
+    
+    return topic_trends
+
+def plot_topic_trends(topic_trends, title="Topic Trends Over Time"):
+    """Create an interactive line plot of topic trends with descriptive topic names."""
+    if topic_trends is None or topic_trends.empty:
+        return None
+    
+    # Create a mapping of topic numbers to descriptive names
+    topic_names = {}
+    for topic_num in topic_trends.columns:
+        if topic_num != -1:  # Skip outlier topic
+            # Get top terms for the topic
+            top_terms = st.session_state.topic_model.get_topic(topic_num)
+            if top_terms:
+                # Use top 3 terms as the topic name
+                top_words = [word for word, _ in top_terms[:3]]
+                topic_names[topic_num] = f"Topic {topic_num}: {' / '.join(top_words)}"
+            else:
+                topic_names[topic_num] = f"Topic {topic_num}"
+        else:
+            topic_names[topic_num] = "Outliers"
+    
+    # Create a copy of the dataframe with renamed columns
+    renamed_trends = topic_trends.rename(columns=topic_names)
+    
+    # Melt the dataframe for plotting
+    df_melted = renamed_trends.reset_index().melt(
+        id_vars=['Period'],
+        var_name='Topic',
+        value_name='Count'
+    )
+    
+    # Create line plot
+    fig = px.line(
+        df_melted,
+        x='Period',
+        y='Count',
+        color='Topic',
+        title=title,
+        labels={'Period': 'Time Period', 'Count': 'Number of Tickets', 'Topic': 'Topic Clusters'},
+    )
+    
+    # Customize the layout with improved legend appearance
+    fig.update_layout(
+        font=dict(
+            family="Source Sans Pro, sans-serif",
+            color="black"
+        ),
+        xaxis=dict(
+            tickangle=-45,
+            showgrid=True,
+            gridcolor='rgba(0,0,0,0.1)',
+            linecolor='black',
+            tickfont=dict(
+                family="Source Sans Pro, sans-serif",
+                color="black"
+            )
+        ),
+        yaxis=dict(
+            showgrid=True,
+            gridcolor='rgba(0,0,0,0.1)',
+            linecolor='black',
+            tickfont=dict(
+                family="Source Sans Pro, sans-serif",
+                color="black"
+            )
+        ),
+        legend_title=dict(
+            text="Topic Clusters",
+            font=dict(
+                size=16,
+                color='black',
+                family="Source Sans Pro, sans-serif"
+            )
+        ),
+        height=500,
+        # Improve legend readability
+        legend=dict(
+            yanchor="top",
+            y=0.99,
+            xanchor="left",
+            x=1.02,
+            bgcolor="white",
+            bordercolor="rgba(0, 0, 0, 0.3)",
+            borderwidth=1,
+            font=dict(
+                size=12,
+                color='black',
+                family="Source Sans Pro, sans-serif"
+            ),
+            itemsizing='constant',
+            itemwidth=30,
+            tracegroupgap=5
+        ),
+        # Ensure the plot area accommodates the legend
+        margin=dict(r=350, t=50, b=50, l=50),
+        plot_bgcolor='white',
+        paper_bgcolor='white'
+    )
+    
+    # Update line styles for better visibility
+    for trace in fig.data:
+        trace.update(
+            line=dict(width=2),
+            mode='lines+markers',
+            marker=dict(size=6)
+        )
+    
+    return fig
+
+def summarize_ticket(text, max_length=130):
+    """Summarize ticket text using BART model."""
+    if not text or len(text.split()) < 30:  # Don't summarize short texts
+        return text
+    
+    try:
+        summarizer = get_summarizer()
+        summary = summarizer(
+            text,
+            max_length=max_length,
+            min_length=30,
+            do_sample=False
+        )[0]['summary_text']
+        return summary
+    except Exception as e:
+        st.warning(f"Could not generate summary: {str(e)}")
+        return text
+
+def extract_action_items(text):
+    """Extract action items and key points from text."""
+    # Split text into sentences
+    sentences = nltk.sent_tokenize(text)
+    
+    action_items = []
+    for sentence in sentences:
+        # Look for action-oriented language
+        if any(word in sentence.lower() for word in [
+            'need', 'must', 'should', 'will', 'required',
+            'action', 'todo', 'fix', 'implement', 'update'
+        ]):
+            action_items.append(sentence)
+    
+    return action_items
 
 # Download required NLTK data
 try:
@@ -28,10 +219,6 @@ if 'processed_data' not in st.session_state:
     st.session_state.processed_data = None
 if 'cluster_labels' not in st.session_state:
     st.session_state.cluster_labels = {}
-if 'monthly_data' not in st.session_state:
-    st.session_state.monthly_data = {}
-if 'custom_labels' not in st.session_state:
-    st.session_state.custom_labels = {}
 if 'topic_model' not in st.session_state:
     st.session_state.topic_model = None
 if 'topic_summaries' not in st.session_state:
@@ -69,15 +256,32 @@ def process_uploaded_file(uploaded_file):
     """Process the uploaded CSV file and return cleaned dataframe."""
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file)
-        required_columns = ['Ticket ID', 'Subject', 'Full Text']
+        required_columns = ['Ticket ID', 'Subject', 'Full Text', 'Date']
         
         # Verify required columns exist
         if not all(col in df.columns for col in required_columns):
-            st.error("CSV must contain columns: 'Ticket ID', 'Subject', 'Full Text'")
+            st.error("CSV must contain columns: 'Ticket ID', 'Subject', 'Full Text', 'Date'")
             return None
         
         # Clean text data
         df['Cleaned Text'] = df['Full Text'].apply(clean_text)
+        
+        # Parse dates
+        df['Date'] = df['Date'].apply(parse_date)
+        if df['Date'].isna().any():
+            st.warning("Some dates could not be parsed. Please ensure dates are in YYYY-MM-DD format.")
+            df = df.dropna(subset=['Date'])
+        
+        # Generate summaries for long tickets
+        df['Summary'] = None
+        df['Action Items'] = None
+        
+        with st.spinner("Generating summaries and extracting action items..."):
+            for idx, row in df.iterrows():
+                if len(row['Full Text'].split()) > 50:  # Only summarize long tickets
+                    df.at[idx, 'Summary'] = summarize_ticket(row['Full Text'])
+                    df.at[idx, 'Action Items'] = "\n• " + "\n• ".join(extract_action_items(row['Full Text']))
+        
         return df
     return None
 
@@ -190,7 +394,72 @@ def perform_clustering(df, clustering_params):
         st.error(f"Error during clustering: {str(e)}")
         return None, None, str(e)
 
-def display_cluster_summary(df, month=None):
+def plot_topic_distribution(df, topic_model):
+    """Create a bar chart showing topic distribution with descriptive names."""
+    # Get topic information
+    topic_info = []
+    for topic_num in sorted(set(df['Cluster'].unique()) - {-1}):
+        # Get topic frequency
+        freq = len(df[df['Cluster'] == topic_num])
+        # Get top terms
+        top_terms = topic_model.get_topic(topic_num)
+        # Get descriptive topic name
+        top_words = [word for word, _ in top_terms[:3]]
+        topic_name = f"Topic {topic_num}: {' / '.join(top_words)}"
+        
+        topic_info.append({
+            'topic_name': topic_name,
+            'frequency': freq
+        })
+    
+    # Sort topics by frequency
+    topic_info.sort(key=lambda x: x['frequency'], reverse=True)
+    
+    # Create topic frequency chart with descriptive names
+    freq_data = pd.DataFrame([{
+        'Topic': t['topic_name'],
+        'Frequency': t['frequency']
+    } for t in topic_info])
+    
+    fig = px.bar(
+        freq_data,
+        x='Topic',
+        y='Frequency',
+        title='Topic Distribution Overview',
+        color_discrete_sequence=['#1f77b4']  # Use a single color for all bars
+    )
+    
+    fig.update_layout(
+        font=dict(
+            family="Source Sans Pro, sans-serif",
+            color="black"
+        ),
+        xaxis=dict(
+            title="Topic",
+            titlefont=dict(size=14, color="black"),
+            tickfont=dict(size=12, color="black"),
+            showgrid=True,
+            gridcolor='rgba(0,0,0,0.1)',
+            linecolor='black',
+            tickangle=-45
+        ),
+        yaxis=dict(
+            title="Number of Tickets",
+            titlefont=dict(size=14, color="black"),
+            tickfont=dict(size=12, color="black"),
+            showgrid=True,
+            gridcolor='rgba(0,0,0,0.1)',
+            linecolor='black'
+        ),
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        margin=dict(b=150),  # Add more bottom margin for rotated labels
+        showlegend=False  # Remove the legend
+    )
+    
+    return fig
+
+def display_cluster_summary(df):
     """Display summary of each cluster with example tickets."""
     # Get unique topics excluding outliers (-1)
     unique_topics = sorted([t for t in df['Cluster'].unique() if t != -1])
@@ -249,7 +518,7 @@ def display_cluster_summary(df, month=None):
                 st.download_button(
                     label="📥 Download Topic Data",
                     data=st.session_state[f'download_data_{topic}'],
-                    file_name=f"topic_{topic}_{month if month else 'data'}.csv",
+                    file_name=f"topic_{topic}.csv",
                     mime="text/csv",
                     key=f"download_{topic}"
                 )
@@ -289,8 +558,12 @@ def display_cluster_summary(df, month=None):
                                 )
                             }
                         )
-        
-        st.write("---")
+    
+    # Add topic distribution visualization at the bottom
+    st.write("---")
+    st.write("### Overall Topic Distribution")
+    fig = plot_topic_distribution(df, st.session_state.topic_model)
+    st.plotly_chart(fig, use_container_width=True)
 
 def generate_topic_description(topic_terms):
     """Generate a natural language description from topic terms."""
@@ -330,49 +603,15 @@ def generate_topic_description(topic_terms):
     # Join all parts with proper spacing
     return "\n\n".join(description_parts)
 
-def plot_cluster_distribution(df, month):
-    """Create a bar chart of cluster distribution."""
-    # Exclude outliers (-1) from visualization
-    cluster_counts = df[df['Cluster'] != -1]['Cluster'].value_counts().reset_index()
-    cluster_counts.columns = ['Cluster', 'Count']
-    
-    # Add custom labels
-    cluster_counts['Label'] = cluster_counts['Cluster'].apply(
-        lambda x: st.session_state.custom_labels.get(x, f"Topic {x}")
-    )
-    
-    fig = px.bar(
-        cluster_counts,
-        x='Label',
-        y='Count',
-        title=f'Topic Distribution - {month}',
-        labels={'Count': 'Number of Tickets', 'Label': 'Topic'}
-    )
-    
-    fig.update_layout(
-        xaxis_tickangle=-45,
-        xaxis={'tickmode': 'array'},
-        height=500
-    )
-    
-    return fig
-
 # App title and description
 st.title("Support Ticket Clustering App")
 st.write("Upload your support ticket CSV files to analyze ticket clusters and trends.")
 
-# Month selection for file upload
-selected_month = st.selectbox(
-    "Select month for the data",
-    ["January", "February", "March", "April", "May", "June",
-     "July", "August", "September", "October", "November", "December"]
-)
-
-# File upload section
+# Remove month selection and simplify file upload
 uploaded_file = st.file_uploader(
-    f"Upload CSV file for {selected_month}",
+    "Upload CSV file",
     type="csv",
-    help="File should contain columns: Ticket ID, Subject, Full Text"
+    help="File should contain columns: Ticket ID, Subject, Full Text, Date"
 )
 
 if uploaded_file:
@@ -380,13 +619,22 @@ if uploaded_file:
     df = process_uploaded_file(uploaded_file)
     
     if df is not None:
-        # Store the processed data for the selected month
-        st.session_state.monthly_data[selected_month] = df
-        st.success(f"Successfully processed {len(df)} tickets for {selected_month}!")
+        # Store the processed data
+        st.session_state.processed_data = df
+        st.success(f"Successfully processed {len(df)} tickets!")
         
         # Display sample of processed data
-        st.subheader(f"Sample of Processed Data - {selected_month}")
-        st.dataframe(df[['Ticket ID', 'Subject', 'Cleaned Text']].head())
+        st.subheader("Sample of Processed Data")
+        st.dataframe(
+            df[['Ticket ID', 'Subject', 'Full Text', 'Date']].head(),
+            use_container_width=True,
+            column_config={
+                "Ticket ID": st.column_config.TextColumn("Ticket ID", width="small"),
+                "Subject": st.column_config.TextColumn("Subject", width="medium"),
+                "Full Text": st.column_config.TextColumn("Full Text", width="large"),
+                "Date": st.column_config.DateColumn("Date", width="small")
+            }
+        )
         
         # Clustering section
         st.subheader("Ticket Clustering")
@@ -394,13 +642,23 @@ if uploaded_file:
         # Clustering parameters
         st.write("### Clustering Parameters")
         
-        min_topic_size = st.slider(
-            "Minimum Topic Size",
-            min_value=2,
-            max_value=20,
-            value=3,
-            help="Minimum number of tickets in a topic"
-        )
+        col1, col2 = st.columns(2)
+        with col1:
+            min_topic_size = st.slider(
+                "Minimum Topic Size",
+                min_value=2,
+                max_value=20,
+                value=3,
+                help="Minimum number of tickets in a topic"
+            )
+        
+        with col2:
+            time_period = st.selectbox(
+                "Trend Analysis Period",
+                options=['day', 'week', 'month'],
+                index=1,
+                help="Time period for trend analysis"
+            )
         
         if st.button("Perform Clustering"):
             with st.spinner("Performing clustering..."):
@@ -416,43 +674,43 @@ if uploaded_file:
                     if topics is not None and error is None:
                         # Add cluster labels to dataframe
                         df['Cluster'] = topics
-                        st.session_state.monthly_data[selected_month] = df
+                        st.session_state.processed_data = df
                         
                         # Count number of meaningful topics
                         n_topics = len(set([t for t in topics if t != -1]))
                         st.success(f"Successfully identified {n_topics} topics!")
                         
-                        # Display cluster summary
-                        display_cluster_summary(df, selected_month)
+                        # Create tabs for different analyses
+                        cluster_tab, trend_tab = st.tabs([
+                            "🔍 Cluster Analysis",
+                            "📈 Topic Trends"
+                        ])
+                        
+                        with cluster_tab:
+                            # Display cluster summary
+                            display_cluster_summary(df)
+                        
+                        with trend_tab:
+                            # Calculate and display topic trends
+                            topic_trends = analyze_topic_trends(df, time_period)
+                            if topic_trends is not None:
+                                st.write(f"### Topic Trends by {time_period.title()}")
+                                fig = plot_topic_trends(
+                                    topic_trends,
+                                    f"Topic Distribution Over Time ({time_period.title()})"
+                                )
+                                st.plotly_chart(fig, use_container_width=True)
+                                
+                                # Show trend statistics
+                                st.write("### Trend Statistics")
+                                trend_stats = topic_trends.describe()
+                                st.dataframe(trend_stats, use_container_width=True)
+                            else:
+                                st.warning("Could not generate trend analysis. Please check date format in your data.")
                     else:
                         st.error(f"Clustering failed: {error if error else 'Unknown error'}")
                         st.info("Try adjusting the minimum topic size or check your input data.")
                 
                 except Exception as e:
                     st.error(f"An error occurred: {str(e)}")
-                    st.info("Please try again with different parameters or check your input data.")
-
-# Month-to-month comparison section
-if len(st.session_state.monthly_data) > 1:
-    st.subheader("Month-to-Month Comparison")
-    
-    # Select months to compare
-    months = list(st.session_state.monthly_data.keys())
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        month1 = st.selectbox("Select first month", months, index=0)
-    with col2:
-        month2 = st.selectbox("Select second month", months, index=min(1, len(months)-1))
-    
-    if month1 != month2:
-        df1 = st.session_state.monthly_data[month1]
-        df2 = st.session_state.monthly_data[month2]
-        
-        if 'Cluster' in df1.columns and 'Cluster' in df2.columns:
-            # Compare distributions
-            fig1 = plot_cluster_distribution(df1, month1)
-            fig2 = plot_cluster_distribution(df2, month2)
-            
-            st.plotly_chart(fig1)
-            st.plotly_chart(fig2) 
+                    st.info("Please try again with different parameters or check your input data.") 
